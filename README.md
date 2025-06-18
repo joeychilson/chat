@@ -143,7 +143,7 @@ S3_BUCKET=chat-files
 # AI Provider API Keys
 ANTHROPIC_API_KEY=your-anthropic-key
 OPENAI_API_KEY=your-openai-key
-GOOGLE_GENERATIVE_AI_API_KEY=your-google-key
+GOOGLE_API_KEY=your-google-key
 XAI_API_KEY=your-xai-key
 
 # Authentication
