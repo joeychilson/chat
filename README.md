@@ -4,6 +4,8 @@ An AI chat application built with SvelteKit that you can host anywhere that supp
 
 NOTE: This is in acitve development. Things will change fast.
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/7JzAnt?referralCode=NhCCIt)
+
 ## Features
 
 ### 🤖 Multi-Provider AI Support
