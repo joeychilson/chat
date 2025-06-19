@@ -13,6 +13,7 @@
 	import MessageActions from './messages-actions.svelte';
 	import MessageEditor from './messages-editor.svelte';
 	import MessageReasoning from './messages-reasoning.svelte';
+	import MessageSources from './messages-sources.svelte';
 
 	interface Props {
 		status: 'streaming' | 'submitted' | 'ready' | 'error';
@@ -66,6 +67,7 @@
 					{/each}
 				{/if}
 			</div>
+			<MessageSources parts={message.parts.filter((part) => part.type === 'source-url')} />
 			<div class="mt-2 flex items-center justify-between">
 				<div class="flex items-center gap-1">
 					{#if status === 'streaming' && lastMessage}
