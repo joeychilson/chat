@@ -7,9 +7,9 @@ import {
 	type UIMessage,
 	convertToModelMessages,
 	createUIMessageStream,
+	createUIMessageStreamResponse,
 	experimental_generateImage,
 	experimental_generateSpeech,
-	JsonToSseTransformStream,
 	smoothStream,
 	streamText
 } from 'ai';
@@ -219,6 +219,17 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			system: systemPrompt,
 			messages: convertToModelMessages(processedMessages),
 			experimental_transform: smoothStream({ chunking: 'word' })
+		});
+
+		result.consumeStream({
+			onError: (error) => {
+				console.error('Failed to consume stream', {
+					id,
+					userId,
+					model,
+					cause: error
+				});
+			}
 		});
 
 		return result.toUIMessageStreamResponse({
@@ -464,13 +475,20 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			}
 		});
 
-		const streamContext = await getStreamContext();
-		const resumableStream = await streamContext.resumableStream(streamId, () =>
-			stream.pipeThrough(new JsonToSseTransformStream())
-		);
+		return createUIMessageStreamResponse({
+			stream,
+			consumeSseStream: async ({ stream }) => {
+				const streamId = randomUUID();
 
-		return new Response(resumableStream, {
-			headers: { 'Content-Type': 'text/event-stream' }
+				const streamContext = await getStreamContext();
+				const resumableStream = await streamContext.resumableStream(streamId, () => stream);
+
+				if (resumableStream) {
+					await db.update(chatsTable).set({ streamId }).where(eq(chatsTable.id, id));
+
+					consumeStream(resumableStream);
+				}
+			}
 		});
 	} else if (baseModel.type === 'speech') {
 		const providerOptions = modelToProviderOptions(model);
@@ -626,13 +644,20 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			}
 		});
 
-		const streamContext = await getStreamContext();
-		const resumableStream = await streamContext.resumableStream(streamId, () =>
-			stream.pipeThrough(new JsonToSseTransformStream())
-		);
+		return createUIMessageStreamResponse({
+			stream,
+			consumeSseStream: async ({ stream }) => {
+				const streamId = randomUUID();
 
-		return new Response(resumableStream, {
-			headers: { 'Content-Type': 'text/event-stream' }
+				const streamContext = await getStreamContext();
+				const resumableStream = await streamContext.resumableStream(streamId, () => stream);
+
+				if (resumableStream) {
+					await db.update(chatsTable).set({ streamId }).where(eq(chatsTable.id, id));
+
+					consumeStream(resumableStream);
+				}
+			}
 		});
 	}
 

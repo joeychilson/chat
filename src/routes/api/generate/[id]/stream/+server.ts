@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 
@@ -40,7 +38,6 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 	}
 
 	const emptyDataStream = createUIMessageStream({
-		generateId: () => randomUUID(),
 		execute: () => {}
 	});
 
