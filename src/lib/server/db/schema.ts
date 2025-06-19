@@ -167,6 +167,9 @@ export const settingsRelations = relations(settingsTable, ({ one }) => ({
 	})
 }));
 
+export type Settings = typeof settingsTable.$inferSelect;
+export type SettingsInsert = typeof settingsTable.$inferInsert;
+
 export const chatsTable = pgTable(
 	'chats',
 	{

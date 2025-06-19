@@ -26,7 +26,7 @@ const authRedirect: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	event.locals.session = session?.session;
+	event.locals.session = session ? { ...session.session, settings: session.settings } : undefined;
 	event.locals.user = session?.user;
 
 	return await resolve(event);

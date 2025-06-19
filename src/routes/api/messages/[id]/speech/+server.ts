@@ -6,7 +6,7 @@ import { experimental_generateSpeech } from 'ai';
 import { eq } from 'drizzle-orm';
 
 import db from '$lib/server/db';
-import { messagesTable, filesTable, creationsTable, settingsTable } from '$lib/server/db/schema';
+import { messagesTable, filesTable, creationsTable } from '$lib/server/db/schema';
 import { generateSpeechTitle } from '$lib/server/generation';
 import { bucketName, getFileUrl, s3Client } from '$lib/server/files';
 import openai from '$lib/server/providers/openai';
@@ -19,10 +19,6 @@ export async function POST({ params, locals }) {
 	const user = locals.user;
 	const messageId = params.id;
 
-	if (!messageId) {
-		error(400, { message: 'Message ID is required' });
-	}
-
 	try {
 		const message = await db
 			.select()
@@ -31,7 +27,7 @@ export async function POST({ params, locals }) {
 			.limit(1);
 
 		if (!message[0]) {
-			error(404, { message: 'Message not found' });
+			error(404, { message: "We couldn't find the message you were looking for." });
 		}
 
 		const chatQuery = await db.query.chatsTable.findFirst({
@@ -40,23 +36,19 @@ export async function POST({ params, locals }) {
 		});
 
 		if (!chatQuery || chatQuery.userId !== user.id) {
-			error(403, { message: 'Access denied' });
+			error(403, { message: "You don't have permission to generate speech for this message." });
 		}
 
 		const messageParts = message[0].parts;
 		const textPart = messageParts.find((part) => part.type === 'text');
 
 		if (!textPart || !textPart.text) {
-			error(400, { message: 'Message contains no text to convert to speech' });
+			error(400, { message: 'This message contains no text to convert to speech.' });
 		}
 
-		const userSettings = await db.query.settingsTable.findFirst({
-			where: eq(settingsTable.userId, user.id)
-		});
-
-		const voice = userSettings?.defaultSpeechVoice || 'alloy';
-		const speed = userSettings?.defaultSpeechSpeed
-			? parseFloat(userSettings.defaultSpeechSpeed)
+		const voice = locals.session.settings?.defaultSpeechVoice || 'alloy';
+		const speed = locals.session.settings?.defaultSpeechSpeed
+			? parseFloat(locals.session.settings.defaultSpeechSpeed)
 			: 1.0;
 
 		const { title, filename } = await generateSpeechTitle({ text: textPart.text });
@@ -127,7 +119,6 @@ export async function POST({ params, locals }) {
 			.where(eq(messagesTable.id, messageId));
 
 		return json({
-			success: true,
 			audio: {
 				url: fileUrl,
 				filename: `${filename}.${extension}`,
@@ -139,7 +130,7 @@ export async function POST({ params, locals }) {
 			}
 		});
 	} catch (err) {
-		console.error('Speech generation failed:', err);
-		error(500, { message: 'Failed to generate speech' });
+		console.error('Failed to generate speech', { userId: user.id, messageId, cause: err });
+		error(500, { message: "We couldn't generate speech right now. Please try again." });
 	}
 }

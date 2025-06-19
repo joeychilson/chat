@@ -1,25 +1,17 @@
 import { randomUUID } from 'crypto';
-import { eq } from 'drizzle-orm';
 
 import type { JSONValue } from 'ai';
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 
 import { defaultModel, getModelConfig } from '$lib/models';
-import db from '$lib/server/db';
-import { settingsTable } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.session || !locals.user) {
 		throw redirect(302, '/signin');
 	}
 
-	const userSettings = await db.query.settingsTable.findFirst({
-		columns: { defaultModel: true },
-		where: eq(settingsTable.userId, locals.user.id)
-	});
-
-	const userDefaultModel = userSettings?.defaultModel || defaultModel;
+	const userDefaultModel = locals.session.settings?.defaultModel || defaultModel;
 
 	const titleParam = url.searchParams.get('title');
 	const modelParam = url.searchParams.get('model');

@@ -2,7 +2,7 @@ import type { RequestHandler } from './$types';
 import { error, json } from '@sveltejs/kit';
 
 import db from '$lib/server/db';
-import { settingsTable } from '$lib/server/db/schema';
+import { settingsTable, type SettingsInsert } from '$lib/server/db/schema';
 import type { Model } from '$lib/models';
 
 export const PATCH: RequestHandler = async ({ request, locals }) => {
@@ -42,7 +42,7 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 	}
 
 	try {
-		const values: typeof settingsTable.$inferInsert = { userId };
+		const values: SettingsInsert = { userId };
 		const updateSet: Record<string, unknown> = { updatedAt: new Date() };
 
 		if (defaultModel) {
