@@ -256,7 +256,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 							reasoningTokens: part.totalUsage.reasoningTokens,
 							cachedTokens: part.totalUsage.cachedInputTokens,
 							totalTokens: part.totalUsage.totalTokens
-						}
+						},
+						createdAt: Date.now()
 					};
 				}
 			},
@@ -395,7 +396,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 							type: model.type,
 							options: model.options
 						},
-						duration
+						duration,
+						createdAt: Date.now()
 					};
 
 					await db.transaction(async (tx) => {
@@ -564,7 +566,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 							type: model.type,
 							options: model.options
 						},
-						duration
+						duration,
+						createdAt: Date.now()
 					};
 
 					await db.transaction(async (tx) => {

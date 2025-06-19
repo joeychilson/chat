@@ -35,6 +35,8 @@ export const messageMetadataSchema = z.object({
 			totalTokens: z.number().optional()
 		})
 		.optional()
+		.optional(),
+	createdAt: z.number().optional()
 });
 
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
