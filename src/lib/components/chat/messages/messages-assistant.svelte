@@ -72,7 +72,7 @@
 						<div aria-live="polite" aria-label="AI is generating response">
 							<IconDots class="size-5 animate-pulse" />
 						</div>
-					{:else}
+					{:else if message.parts.length > 0}
 						<MessageActions {status} {message} {retry} {updateMessage} bind:editing />
 					{/if}
 				</div>

@@ -39,7 +39,9 @@
 						{/each}
 					</div>
 					<div class="mt-2 flex items-center gap-1" role="toolbar" aria-label="Message actions">
-						<MessageActions {status} {message} {retry} {updateMessage} bind:editing />
+						{#if message.parts.length > 0}
+							<MessageActions {status} {message} {retry} {updateMessage} bind:editing />
+						{/if}
 						{#if files.length > 0}
 							<MessageFiles {files} {message} />
 						{/if}
