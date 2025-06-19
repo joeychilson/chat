@@ -175,7 +175,16 @@
 
 	async function retry(message: Message) {
 		try {
-			const messageModel = message.metadata?.model;
+			let messageModel = message.metadata?.model;
+
+			if (message.role === 'user' && !messageModel) {
+				const messageIndex = chat.messages.findIndex((m) => m.id === message.id);
+				const nextMessage = chat.messages[messageIndex + 1];
+
+				if (nextMessage?.role === 'assistant') {
+					messageModel = nextMessage.metadata?.model;
+				}
+			}
 
 			if (modelsAreDifferent(messageModel, model)) {
 				await retryWithDifferentModel(message);
