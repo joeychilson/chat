@@ -14,6 +14,10 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 	let defaultModel: Model | undefined;
 	let defaultSpeechVoice: string | undefined;
 	let defaultSpeechSpeed: string | undefined;
+	let preferredName: string | undefined;
+	let userRole: string | undefined;
+	let assistantTraits: string[] | undefined;
+	let additionalContext: string | undefined;
 
 	try {
 		const body = await request.json();
@@ -33,7 +37,31 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 			defaultSpeechSpeed = body.defaultSpeechSpeed;
 		}
 
-		if (!defaultModel && defaultSpeechVoice === undefined && defaultSpeechSpeed === undefined) {
+		if (body.preferredName !== undefined) {
+			preferredName = body.preferredName;
+		}
+
+		if (body.userRole !== undefined) {
+			userRole = body.userRole;
+		}
+
+		if (body.assistantTraits !== undefined) {
+			assistantTraits = body.assistantTraits;
+		}
+
+		if (body.additionalContext !== undefined) {
+			additionalContext = body.additionalContext;
+		}
+
+		if (
+			!defaultModel &&
+			defaultSpeechVoice === undefined &&
+			defaultSpeechSpeed === undefined &&
+			preferredName === undefined &&
+			userRole === undefined &&
+			assistantTraits === undefined &&
+			additionalContext === undefined
+		) {
 			error(400, { message: 'No settings provided to update.' });
 		}
 	} catch (err) {
@@ -56,6 +84,22 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 		if (defaultSpeechSpeed !== undefined) {
 			values.defaultSpeechSpeed = defaultSpeechSpeed;
 			updateSet.defaultSpeechSpeed = defaultSpeechSpeed;
+		}
+		if (preferredName !== undefined) {
+			values.preferredName = preferredName;
+			updateSet.preferredName = preferredName;
+		}
+		if (userRole !== undefined) {
+			values.userRole = userRole;
+			updateSet.userRole = userRole;
+		}
+		if (assistantTraits !== undefined) {
+			values.assistantTraits = assistantTraits;
+			updateSet.assistantTraits = assistantTraits;
+		}
+		if (additionalContext !== undefined) {
+			values.additionalContext = additionalContext;
+			updateSet.additionalContext = additionalContext;
 		}
 
 		await db.insert(settingsTable).values(values).onConflictDoUpdate({

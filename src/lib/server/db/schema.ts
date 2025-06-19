@@ -148,6 +148,10 @@ export const settingsTable = pgTable(
 		defaultModel: jsonb('default_model').$type<Model>(),
 		defaultSpeechVoice: varchar('default_speech_voice', { length: 50 }).default('alloy'),
 		defaultSpeechSpeed: varchar('default_speech_speed', { length: 10 }).default('1.0'),
+		preferredName: varchar('preferred_name', { length: 50 }),
+		userRole: varchar('user_role', { length: 100 }),
+		assistantTraits: jsonb('assistant_traits').$type<string[]>().default([]),
+		additionalContext: text('additional_context'),
 		updatedAt: timestamp('updated_at', { withTimezone: true })
 			.notNull()
 			.defaultNow()

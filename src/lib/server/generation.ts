@@ -2,6 +2,7 @@ import { type UIMessage, generateObject } from 'ai';
 import { z } from 'zod';
 
 import google from '$lib/server/providers/google';
+import type { Settings } from '$lib/server/db/schema';
 
 export async function generateChatTitle({
 	message
@@ -163,4 +164,44 @@ export async function generateSpeechTitle({
 	} catch (error) {
 		throw new Error('Failed to generate speech title', { cause: error });
 	}
+}
+
+export function generateSystemPrompt(userSettings?: Settings | null): string {
+	const currentDate = new Date().toLocaleDateString('en-US', {
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric'
+	});
+
+	let systemPrompt = `You are a helpful, knowledgeable AI assistant. Today is ${currentDate}.`;
+
+	if (!userSettings) {
+		return systemPrompt;
+	}
+
+	const personalizations: string[] = [];
+
+	if (userSettings.preferredName) {
+		personalizations.push(`The user prefers to be called ${userSettings.preferredName}.`);
+	}
+
+	if (userSettings.userRole) {
+		personalizations.push(`The user is a ${userSettings.userRole}.`);
+	}
+
+	if (userSettings.assistantTraits && userSettings.assistantTraits.length > 0) {
+		const traits = userSettings.assistantTraits.join(', ');
+		personalizations.push(`Please be ${traits} in your responses.`);
+	}
+
+	if (userSettings.additionalContext) {
+		personalizations.push(`Additional context about the user: ${userSettings.additionalContext}`);
+	}
+
+	if (personalizations.length > 0) {
+		systemPrompt += '\n\n' + personalizations.join(' ');
+	}
+
+	return systemPrompt;
 }

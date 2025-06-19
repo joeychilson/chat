@@ -26,7 +26,12 @@ import {
 	filesTable,
 	messagesTable
 } from '$lib/server/db/schema';
-import { generateChatTitle, generateImageTitle, generateSpeechTitle } from '$lib/server/generation';
+import {
+	generateChatTitle,
+	generateImageTitle,
+	generateSpeechTitle,
+	generateSystemPrompt
+} from '$lib/server/generation';
 import {
 	getImageModelProvider,
 	getSpeechModelProvider,
@@ -205,11 +210,13 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		const providerOptions = modelToProviderOptions(model);
 		const { provider, modelId } = getTextModelProvider(model);
 
+		const systemPrompt = generateSystemPrompt(locals.session?.settings);
 		const processedMessages = processMessagesForFiles(messages, baseModel);
 
 		const result = streamText({
 			model: provider(modelId),
 			providerOptions,
+			system: systemPrompt,
 			messages: convertToModelMessages(processedMessages),
 			experimental_transform: smoothStream({ chunking: 'word' })
 		});

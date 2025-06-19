@@ -19,6 +19,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Card } from '$lib/components/ui/card';
+	import { Textarea } from '$lib/components/ui/textarea';
 	import * as Select from '$lib/components/ui/select';
 	import {
 		Dialog,
@@ -121,6 +122,11 @@
 	let userDefaultSpeechVoice = $state(data.userSettings?.defaultSpeechVoice || 'alloy');
 	let userDefaultSpeechSpeed = $state(data.userSettings?.defaultSpeechSpeed || '1.0');
 	let isUpdatingSpeech = $state(false);
+	let userPreferredName = $state(data.userSettings?.preferredName || '');
+	let userRole = $state(data.userSettings?.userRole || '');
+	let userAssistantTraits = $state(data.userSettings?.assistantTraits || []);
+	let userAdditionalContext = $state(data.userSettings?.additionalContext || '');
+	let isUpdatingPersonalization = $state(false);
 
 	async function handleModelChange(newModel: Model) {
 		isUpdatingModel = true;
@@ -188,6 +194,45 @@
 		}
 	}
 
+	async function handlePersonalizationUpdate() {
+		isUpdatingPersonalization = true;
+		try {
+			const response = await fetch('/api/settings', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					preferredName: userPreferredName,
+					userRole: userRole,
+					assistantTraits: userAssistantTraits,
+					additionalContext: userAdditionalContext
+				})
+			});
+
+			if (!response.ok) throw new Error('Failed to update personalization');
+
+			toast.success('Personalization settings updated successfully');
+			await invalidateAll();
+		} catch (error) {
+			console.error('Failed to update personalization settings', { cause: error });
+			toast.error("We couldn't update your personalization settings. Please try again.");
+		} finally {
+			isUpdatingPersonalization = false;
+		}
+	}
+
+	function addTrait(trait: string) {
+		if (trait && !userAssistantTraits.includes(trait)) {
+			userAssistantTraits = [...userAssistantTraits, trait];
+		}
+	}
+
+	function removeTrait(trait: string) {
+		userAssistantTraits = userAssistantTraits.filter((t) => t !== trait);
+	}
+
+	let newTrait = $state('');
+	let isPersonalizationExpanded = $state(false);
+
 	async function handleDeleteAccount() {
 		if (deleteConfirmationText !== requiredDeleteText) {
 			toast.error(`Please type exactly: ${requiredDeleteText}`);
@@ -228,6 +273,170 @@
 			<h3 class="text-lg font-semibold">Preferences</h3>
 
 			<div class="space-y-4">
+				<div
+					class="bg-muted/30 border-border/50 flex items-center justify-between rounded-lg border p-4"
+				>
+					<div class="space-y-1">
+						<p class="text-sm font-medium">Assistant Personalization</p>
+						<p class="text-muted-foreground text-xs">
+							Customize how the assistant interacts with you.
+						</p>
+					</div>
+					<Button
+						variant="outline"
+						size="sm"
+						onclick={() => (isPersonalizationExpanded = !isPersonalizationExpanded)}
+					>
+						{isPersonalizationExpanded ? 'Collapse' : 'Customize'}
+					</Button>
+				</div>
+
+				{#if isPersonalizationExpanded}
+					<div class="bg-muted/30 border-border/50 space-y-6 rounded-lg border p-6">
+						<div class="space-y-4">
+							<div>
+								<Label for="preferred-name" class="text-sm font-medium">Name</Label>
+								<p class="text-muted-foreground mb-2 text-xs">
+									How would you like to be addressed?
+								</p>
+								<Input
+									id="preferred-name"
+									bind:value={userPreferredName}
+									placeholder="Your name"
+									class="max-w-sm"
+									maxlength={50}
+								/>
+							</div>
+
+							<div>
+								<Label for="user-role" class="text-sm font-medium">Role</Label>
+								<p class="text-muted-foreground mb-2 text-xs">What do you do?</p>
+								<Input
+									id="user-role"
+									bind:value={userRole}
+									placeholder="e.g., Software Engineer, Designer, Student"
+									class="max-w-sm"
+									maxlength={100}
+								/>
+							</div>
+						</div>
+
+						<div>
+							<Label class="text-sm font-medium">Assistant Traits</Label>
+							<p class="text-muted-foreground mb-3 text-xs">
+								Select personality traits for your assistant.
+							</p>
+
+							{#if userAssistantTraits.length > 0}
+								<div class="mb-3 flex flex-wrap gap-2">
+									{#each userAssistantTraits as trait (trait)}
+										<Button
+											variant="default"
+											size="sm"
+											class="bg-primary text-primary-foreground hover:bg-primary/90 group h-8 px-2.5 py-1.5 text-xs"
+											onclick={() => removeTrait(trait)}
+										>
+											{trait}
+											<span class="group-hover:text-primary-foreground/70 ml-1.5 transition-colors"
+												>×</span
+											>
+										</Button>
+									{/each}
+								</div>
+							{/if}
+
+							<div class="mb-3 flex gap-2">
+								<Input
+									bind:value={newTrait}
+									placeholder="Add a custom trait..."
+									class="max-w-sm"
+									maxlength={100}
+									onkeydown={(e) => {
+										if ((e.key === 'Enter' || e.key === 'Tab') && newTrait.trim()) {
+											e.preventDefault();
+											addTrait(newTrait.trim());
+											newTrait = '';
+										}
+									}}
+								/>
+								<Button
+									variant="secondary"
+									size="default"
+									onclick={() => {
+										if (newTrait.trim()) {
+											addTrait(newTrait.trim());
+											newTrait = '';
+										}
+									}}
+									disabled={!newTrait.trim() || userAssistantTraits.length >= 50}
+								>
+									Add
+								</Button>
+							</div>
+
+							<div class="flex flex-wrap gap-2">
+								<p class="text-muted-foreground mb-1 w-full text-xs">Suggestions:</p>
+								{#each ['Professional', 'Friendly', 'Concise', 'Detailed', 'Creative', 'Analytical', 'Patient', 'Encouraging'] as suggestedTrait (suggestedTrait)}
+									{@const isSelected = userAssistantTraits.includes(suggestedTrait.toLowerCase())}
+									<Button
+										variant={isSelected ? 'default' : 'outline'}
+										size="sm"
+										onclick={() => {
+											if (isSelected) {
+												removeTrait(suggestedTrait.toLowerCase());
+											} else {
+												addTrait(suggestedTrait.toLowerCase());
+											}
+										}}
+										disabled={!isSelected && userAssistantTraits.length >= 50}
+										class="text-xs"
+									>
+										{suggestedTrait}
+									</Button>
+								{/each}
+							</div>
+						</div>
+
+						<div>
+							<Label for="additional-context" class="text-sm font-medium">Additional Context</Label>
+							<p class="text-muted-foreground mb-2 text-xs">
+								Any other preferences or information to enhance your experience
+							</p>
+							<Textarea
+								id="additional-context"
+								bind:value={userAdditionalContext}
+								placeholder="e.g., I prefer detailed explanations, I'm learning programming, I work in healthcare..."
+								class="min-h-24 resize-none text-sm"
+								maxlength={3000}
+							/>
+						</div>
+
+						<div class="flex items-center justify-between pt-4">
+							<div class="text-muted-foreground text-xs">
+								{#if userPreferredName || userRole || userAssistantTraits.length > 0 || userAdditionalContext}
+									<span class="text-primary">● Personalization active</span>
+								{:else}
+									<span>No personalization set</span>
+								{/if}
+							</div>
+							<Button
+								onclick={handlePersonalizationUpdate}
+								disabled={isUpdatingPersonalization}
+								variant={userPreferredName ||
+								userRole ||
+								userAssistantTraits.length > 0 ||
+								userAdditionalContext
+									? 'default'
+									: 'secondary'}
+							>
+								{#if isUpdatingPersonalization}
+									<IconLoader class="mr-2 size-4 animate-spin" />
+								{/if}
+								Save Changes
+							</Button>
+						</div>
+					</div>
+				{/if}
 				<div
 					class="bg-muted/30 border-border/50 flex items-center justify-between rounded-lg border p-4"
 				>
